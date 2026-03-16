@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NECPL — Full Control Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Hind:wght@400;500;600&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--green:#1a6b2e;--green-light:#25943f;--green-bright:#2ecc5f;--gold:#f0a500;--red:#c0392b;--dark:#0d1f0f;--dark2:#132716;--cream:#f5f0e8;--white:#ffffff;--muted:#6b7c6e;--border:#e0dbd2;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Hind',sans-serif;background:#f0ede6;color:#1a1a18;}
+#loginScreen{position:fixed;inset:0;z-index:9999;background:var(--dark);display:flex;align-items:center;justify-content:center;}
+.login-box{background:var(--dark2);border:1px solid rgba(255,255,255,0.1);border-top:4px solid var(--gold);padding:48px 44px;width:100%;max-width:400px;text-align:center;}
+.login-box h2{font-family:'Teko',sans-serif;font-size:36px;letter-spacing:3px;color:var(--white);margin-bottom:4px;}
+.login-box p{font-size:11px;letter-spacing:2px;color:rgba(255,255,255,0.3);margin-bottom:32px;text-transform:uppercase;}
+.login-box input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--white);font-family:'Hind',sans-serif;font-size:15px;margin-bottom:12px;outline:none;}
+.login-box input:focus{border-color:var(--gold);}
+.login-box input::placeholder{color:rgba(255,255,255,0.25);}
+.login-btn{width:100%;padding:14px;background:var(--gold);color:var(--dark);border:none;font-family:'Teko',sans-serif;font-size:24px;letter-spacing:2px;cursor:pointer;}
+.login-err{color:#e74c3c;font-size:13px;margin-top:10px;display:none;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:240px;background:var(--dark);flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto;}
+.sidebar-logo{padding:20px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.logo-badge{width:38px;height:38px;background:var(--gold);display:inline-flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:13px;font-weight:700;color:var(--dark);margin-bottom:6px;}
+.logo-title{font-family:'Teko',sans-serif;font-size:19px;letter-spacing:2px;color:var(--white);display:block;}
+.logo-sub{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;}
+.sec-label{font-size:9px;letter-spacing:3px;color:rgba(255,255,255,0.2);text-transform:uppercase;padding:14px 18px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 18px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);border-left:3px solid transparent;transition:all 0.2s;}
+.nav-item:hover{color:rgba(255,255,255,0.8);background:rgba(255,255,255,0.04);}
+.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(240,165,0,0.06);}
+.nav-icon{font-size:15px;width:18px;text-align:center;}
+.sidebar-footer{padding:14px 18px;border-top:1px solid rgba(255,255,255,0.07);margin-top:auto;font-size:10px;color:rgba(255,255,255,0.15);}
+.main{margin-left:240px;flex:1;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40;}
+.topbar h1{font-family:'Teko',sans-serif;font-size:21px;letter-spacing:2px;color:var(--dark);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.notif-badge{background:var(--red);color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+.admin-chip{background:var(--green);color:white;padding:4px 10px;font-size:11px;font-weight:700;letter-spacing:1px;}
+.live-dot{width:8px;height:8px;background:var(--green-bright);border-radius:50%;animation:blink 1.5s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.content{padding:22px 24px;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--white);border:1px solid var(--border);padding:18px;border-top:3px solid transparent;}
+.stat-card.g{border-top-color:var(--green-bright);}
+.stat-card.y{border-top-color:var(--gold);}
+.stat-card.b{border-top-color:#3498db;}
+.stat-card.r{border-top-color:var(--red);}
+.stat-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.stat-val{font-family:'Teko',sans-serif;font-size:38px;line-height:1;color:var(--dark);}
+.panel{background:var(--white);border:1px solid var(--border);margin-bottom:16px;}
+.panel-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-head h3{font-family:'Teko',sans-serif;font-size:18px;letter-spacing:1px;color:var(--dark);}
+.ctrl-group{padding:18px 20px;border-bottom:1px solid var(--border);}
+.ctrl-group:last-child{border-bottom:none;}
+.ctrl-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block;}
+.ctrl-desc{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5;}
+.ctrl-input{width:100%;padding:10px 13px;border:1px solid var(--border);background:var(--cream);font-family:'Hind',sans-serif;font-size:14px;outline:none;}
+.ctrl-input:focus{border-color:var(--green);}
+.ctrl-textarea{width:100%;padding:10px 13px;border:1px solid var(--border);background:var(--cream);font-family:'Hind',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:75px;}
+.ctrl-textarea:focus{border-color:var(--green);}
+.ctrl-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ctrl-select{width:100%;padding:10px 13px;border:1px solid var(--border);background:var(--cream);font-family:'Hind',sans-serif;font-size:14px;outline:none;cursor:pointer;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
+.toggle-info h4{font-size:14px;font-weight:600;color:var(--dark);margin-bottom:2px;}
+.toggle-info p{font-size:11px;color:var(--muted);}
+.toggle{position:relative;width:52px;height:26px;cursor:pointer;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.t-slider{position:absolute;inset:0;background:#ccc;border-radius:26px;transition:0.3s;}
+.toggle input:checked + .t-slider{background:var(--green);}
+.t-knob{position:absolute;height:18px;width:18px;left:4px;bottom:4px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;}
+.toggle input:checked ~ .t-knob{transform:translateX(26px);}
+.save-btn{width:100%;padding:14px;background:var(--green);color:white;border:none;font-family:'Teko',sans-serif;font-size:21px;letter-spacing:2px;cursor:pointer;transition:background 0.2s;}
+.save-btn:hover{background:var(--green-light);}
+.save-btn.gold{background:var(--gold);color:var(--dark);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:#fafaf8;}
+th{padding:10px 14px;text-align:left;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);}
+td{padding:12px 14px;border-bottom:1px solid #f0ede6;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafaf8;}
+.player-name{font-weight:600;color:var(--dark);font-size:14px;}
+.player-detail{font-size:11px;color:var(--muted);margin-top:1px;}
+.badge{display:inline-block;padding:3px 8px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.b-pending{background:rgba(240,165,0,0.12);color:#8a6200;border:1px solid rgba(240,165,0,0.3);}
+.b-approved{background:rgba(46,204,95,0.1);color:var(--green);border:1px solid rgba(46,204,95,0.3);}
+.b-rejected{background:rgba(192,57,43,0.08);color:var(--red);border:1px solid rgba(192,57,43,0.2);}
+.action-btns{display:flex;gap:5px;flex-wrap:wrap;}
+.btn-ok{background:var(--green);color:white;border:none;padding:6px 11px;font-family:'Teko',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;}
+.btn-no{background:transparent;color:var(--red);border:1px solid rgba(192,57,43,0.3);padding:6px 11px;font-family:'Teko',sans-serif;font-size:13px;cursor:pointer;}
+.btn-no:hover{background:var(--red);color:white;}
+.btn-eye{background:transparent;color:var(--muted);border:1px solid var(--border);padding:6px 11px;font-family:'Teko',sans-serif;font-size:13px;cursor:pointer;}
+.filter-bar{display:flex;gap:7px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--border);align-items:center;}
+.filter-btn{padding:6px 14px;background:transparent;border:1px solid var(--border);font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);}
+.filter-btn.active{background:var(--dark);color:white;border-color:var(--dark);}
+.search-input{margin-left:auto;padding:7px 11px;border:1px solid var(--border);background:white;font-family:'Hind',sans-serif;font-size:13px;outline:none;width:170px;}
+#cardModal{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;}
+#cardModal.open{display:flex;}
+.id-card{width:340px;background:linear-gradient(145deg,#0d1f0f,#1a4a22,#0d1f0f);border:1px solid rgba(240,165,0,0.4);overflow:hidden;}
+.card-top-stripe{background:linear-gradient(90deg,#f0a500,#e8c44a,#f0a500);height:5px;}
+.card-header{padding:16px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.card-badge{width:42px;height:42px;background:#f0a500;display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:11px;font-weight:700;color:#0d1f0f;flex-shrink:0;}
+.card-league h4{font-family:'Teko',sans-serif;font-size:15px;color:#fff;letter-spacing:2px;}
+.card-league span{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;}
+.card-s-tag{font-family:'Teko',sans-serif;font-size:11px;color:#f0a500;border:1px solid rgba(240,165,0,0.3);padding:3px 7px;margin-left:auto;}
+.card-body{padding:16px 20px;}
+.card-player-row{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;}
+.card-photo{width:75px;height:85px;background:rgba(255,255,255,0.06);border:2px solid rgba(240,165,0,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.card-initials{font-family:'Teko',sans-serif;font-size:30px;color:#f0a500;font-weight:700;}
+.card-info{flex:1;}
+.card-pname{font-family:'Teko',sans-serif;font-size:22px;color:#fff;letter-spacing:1px;line-height:1;margin-bottom:5px;}
+.card-role{display:inline-block;background:rgba(240,165,0,0.15);border:1px solid rgba(240,165,0,0.4);color:#f0a500;font-size:9px;letter-spacing:2px;padding:3px 8px;text-transform:uppercase;font-weight:700;margin-bottom:8px;}
+.card-meta{display:flex;flex-direction:column;gap:4px;}
+.card-meta-row{display:flex;align-items:center;gap:7px;}
+.card-meta-key{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;width:42px;flex-shrink:0;}
+.card-meta-val{font-size:12px;color:rgba(255,255,255,0.8);font-weight:500;}
+.card-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.08);margin-bottom:12px;}
+.card-stat{padding:9px 7px;text-align:center;background:#0f2614;}
+.card-stat-val{font-family:'Teko',sans-serif;font-size:20px;color:#f0a500;display:block;line-height:1;}
+.card-stat-key{font-size:7px;letter-spacing:1.5px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-top:2px;}
+.card-foot{border-top:1px solid rgba(255,255,255,0.08);padding:11px 20px;display:flex;align-items:center;justify-content:space-between;}
+.card-id-txt{font-family:monospace;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;}
+.card-verified{font-size:10px;color:#2ecc5f;letter-spacing:1px;font-weight:600;}
+.card-bottom-stripe{height:4px;background:linear-gradient(90deg,#2ecc5f,#f0a500,#2ecc5f);}
+.card-modal-btns{display:flex;gap:8px;margin-top:14px;max-width:340px;margin-left:auto;margin-right:auto;}
+.dl-btn{flex:1;padding:12px;background:var(--gold);color:var(--dark);border:none;font-family:'Teko',sans-serif;font-size:16px;cursor:pointer;}
+.wa-btn{flex:1;padding:12px;background:#25D366;color:white;border:none;font-family:'Teko',sans-serif;font-size:16px;cursor:pointer;}
+.close-btn-card{padding:12px 14px;background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.15);font-family:'Teko',sans-serif;font-size:16px;cursor:pointer;}
+.color-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;}
+.cswatch{width:34px;height:34px;border-radius:4px;cursor:pointer;border:3px solid transparent;transition:all 0.2s;}
+.cswatch:hover,.cswatch.sel{border-color:var(--dark);transform:scale(1.1);}
+.section{display:none;}
+.section.active{display:block;}
+#toast{position:fixed;bottom:22px;right:22px;background:var(--dark);color:white;padding:13px 18px;font-size:14px;font-weight:500;border-left:4px solid var(--green-bright);z-index:9999;display:none;max-width:300px;}
+@media(max-width:768px){.sidebar{width:52px;}.logo-title,.logo-sub,.nav-item span,.sec-label,.sidebar-footer{display:none;}.main{margin-left:52px;}.stats-row{grid-template-columns:1fr 1fr;}.ctrl-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div style="font-size:38px;margin-bottom:10px;">🏏</div>
+    <h2>NECPL ADMIN</h2>
+    <p>Full Control Panel · Season 1</p>
+    <input type="text" id="adminUser" placeholder="Username" autocomplete="off">
+    <input type="password" id="adminPass" placeholder="Password">
+    <button class="login-btn" onclick="doLogin()">LOGIN →</button>
+    <div class="login-err" id="loginErr">❌ Wrong credentials</div>
+  </div>
+</div>
+
+<div class="layout" id="dashboard" style="display:none;">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">N</div>
+      <span class="logo-title">NECPL</span>
+      <span class="logo-sub">Admin Panel</span>
+    </div>
+    <nav>
+      <div class="sec-label">Main</div>
+      <div class="nav-item active" onclick="switchTab('overview',this)"><span class="nav-icon">📊</span><span>Overview</span></div>
+      <div class="nav-item" onclick="switchTab('regs',this)"><span class="nav-icon">📋</span><span>Registrations</span></div>
+      <div class="nav-item" onclick="switchTab('approved',this)"><span class="nav-icon">✅</span><span>Approved</span></div>
+      <div class="nav-item" onclick="switchTab('cards',this)"><span class="nav-icon">🪪</span><span>ID Cards</span></div>
+      <div class="nav-item" onclick="switchTab('utrSearch',this)"><span class="nav-icon">🔍</span><span>UTR Search</span></div>
+      <div class="nav-item" onclick="switchTab('stats',this)"><span class="nav-icon">📊</span><span>Stats Chart</span></div>
+      <div class="nav-item" onclick="switchTab('bulk',this)"><span class="nav-icon">📤</span><span>Bulk Tools</span></div>
+      <div class="sec-label">Website Control</div>
+      <div class="nav-item" onclick="switchTab('hero',this)"><span class="nav-icon">🏠</span><span>Hero Section</span></div>
+      <div class="nav-item" onclick="switchTab('ticker',this)"><span class="nav-icon">📢</span><span>Ticker & Notice</span></div>
+      <div class="nav-item" onclick="switchTab('fees',this)"><span class="nav-icon">💰</span><span>Fees & Prizes</span></div>
+      <div class="nav-item" onclick="switchTab('rules',this)"><span class="nav-icon">📜</span><span>Rules</span></div>
+      <div class="nav-item" onclick="switchTab('theme',this)"><span class="nav-icon">🎨</span><span>Theme</span></div>
+      <div class="nav-item" onclick="switchTab('regctrl',this)"><span class="nav-icon">🔐</span><span>Reg. Control</span></div>
+      <div class="nav-item" onclick="switchTab('nav',this)"><span class="nav-icon">🔝</span><span>Nav Bar</span></div>
+      <div class="nav-item" onclick="switchTab('contact',this)"><span class="nav-icon">📞</span><span>Contact & Venue</span></div>
+      <div class="nav-item" onclick="switchTab('floatbtn',this)"><span class="nav-icon">🔘</span><span>Float Button</span></div>
+      <div class="nav-item" onclick="switchTab('popup',this)"><span class="nav-icon">💬</span><span>Popup Alert</span></div>
+      <div class="nav-item" onclick="switchTab('noticebar',this)"><span class="nav-icon">🚨</span><span>Notice Bar</span></div>
+      <div class="nav-item" onclick="switchTab('faq',this)"><span class="nav-icon">❓</span><span>FAQ</span></div>
+      <div class="nav-item" onclick="switchTab('broadcast',this)"><span class="nav-icon">📲</span><span>Push Notifications</span></div>
+    </nav>
+    <div class="sidebar-footer">Firebase Live · Season 1</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="pageTitle">OVERVIEW</h1>
+      <div class="topbar-right">
+        <div class="live-dot"></div>
+        <span style="font-size:11px;color:var(--muted);">LIVE</span>
+        <span style="font-size:16px;">🔔</span>
+        <div class="notif-badge" id="pendingBadge">0</div>
+        <div class="admin-chip">ADMIN</div>
+        <button onclick="doLogout()" style="background:transparent;border:1px solid var(--border);padding:5px 10px;font-size:12px;cursor:pointer;color:var(--muted);">Logout</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- OVERVIEW -->
+      <div class="section active" id="tab-overview">
+        <div class="stats-row">
+          <div class="stat-card g"><div class="stat-label">Total</div><div class="stat-val" id="st-total">0</div></div>
+          <div class="stat-card y"><div class="stat-label">Pending</div><div class="stat-val" id="st-pending">0</div></div>
+          <div class="stat-card b"><div class="stat-label">Approved</div><div class="stat-val" id="st-approved">0</div></div>
+          <div class="stat-card r"><div class="stat-label">Rejected</div><div class="stat-val" id="st-rejected">0</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>🔔 LATEST REGISTRATIONS</h3></div>
+          <table><thead><tr><th>Player</th><th>Phone</th><th>Type</th><th>UTR</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="overviewTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- REGISTRATIONS -->
+      <div class="section" id="tab-regs">
+        <div class="panel">
+          <div class="panel-head"><h3>📋 ALL REGISTRATIONS</h3><span id="reg-count" style="font-size:13px;color:var(--muted);">0 total</span></div>
+          <div class="filter-bar">
+            <button class="filter-btn active" onclick="filterReg('all',this)">All</button>
+            <button class="filter-btn" onclick="filterReg('pending',this)">Pending</button>
+            <button class="filter-btn" onclick="filterReg('approved',this)">Approved</button>
+            <button class="filter-btn" onclick="filterReg('rejected',this)">Rejected</button>
+            <input type="text" class="search-input" placeholder="🔍 Search..." oninput="searchReg(this.value)">
+          </div>
+          <table><thead><tr><th>#</th><th>Player</th><th>Role</th><th>Age</th><th>City</th><th>Phone</th><th>Type</th><th>UTR / Payment</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="regTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- APPROVED -->
+      <div class="section" id="tab-approved">
+        <div class="panel">
+          <div class="panel-head"><h3>✅ APPROVED PLAYERS</h3></div>
+          <table><thead><tr><th>Player</th><th>Role</th><th>City</th><th>Date</th><th>Card</th></tr></thead>
+          <tbody id="approvedTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- CARDS -->
+      <div class="section" id="tab-cards">
+        <div class="panel">
+          <div class="panel-head"><h3>🪪 PLAYER ID CARDS</h3></div>
+          <div id="cardsGrid" style="padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div>
+        </div>
+      </div>
+
+      <!-- UTR SEARCH -->
+      <div class="section" id="tab-utrSearch">
+        <div class="panel">
+          <div class="panel-head"><h3>🔍 UTR NUMBER SE PLAYER DHUNDHO</h3></div>
+          <div style="padding:16px 20px;">
+            <div style="display:flex;gap:10px;margin-bottom:4px;">
+              <input class="ctrl-input" id="utrSearchInput" placeholder="12-digit UTR number daalo..." style="flex:1;" onkeydown="if(event.key==='Enter')searchByUTR()">
+              <button class="save-btn" onclick="searchByUTR()" style="white-space:nowrap;">🔍 SEARCH</button>
+            </div>
+            <div id="utrSearchResult"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS CHART -->
+      <div class="section" id="tab-stats">
+        <div class="panel">
+          <div class="panel-head"><h3>📊 CITY-WISE REGISTRATIONS</h3></div>
+          <div style="padding:16px 20px;" id="cityChart"><div style="color:var(--muted);font-size:13px;">Loading...</div></div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-head"><h3>📊 ROLE-WISE REGISTRATIONS</h3></div>
+          <div style="padding:16px 20px;" id="roleChart"><div style="color:var(--muted);font-size:13px;">Loading...</div></div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-head"><h3>🖨️ PRINT ALL ID CARDS</h3></div>
+          <div style="padding:16px 20px;">
+            <div style="font-size:13px;color:var(--muted);font-family:'Hind',sans-serif;margin-bottom:14px;">Saare approved players ke ID cards ek saath print karo</div>
+            <button class="save-btn gold" onclick="printAllCards()" style="width:100%;">🖨️ PRINT ALL ID CARDS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BULK TOOLS -->
+      <div class="section" id="tab-bulk">
+        <div class="panel">
+          <div class="panel-head"><h3>📤 BULK WHATSAPP SENDER</h3></div>
+          <div style="padding:16px 20px 0;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+              <button class="save-btn" onclick="bulkWA('pending')" style="flex:1;min-width:140px;background:#25D366;">📱 Message All PENDING</button>
+              <button class="save-btn" onclick="bulkWA('approved')" style="flex:1;min-width:140px;background:#1a6b2e;">✅ Message All APPROVED</button>
+              <button class="save-btn" onclick="bulkWA('all')" style="flex:1;min-width:140px;background:#2c3e50;">📣 Message ALL Players</button>
+            </div>
+            <div class="ctrl-group">
+              <label class="ctrl-label">Custom Bulk Message Template</label>
+              <div class="ctrl-desc">Use {name}, {id}, {role}, {city} as placeholders</div>
+              <textarea class="ctrl-textarea" id="bulkMsg" style="min-height:120px;">Namaste {name} ji! 🏏
+
+Aapka NECPL Season 1 mein registration receive ho gaya hai.
+
+📋 Player ID: {id}
+🎯 Role: {role}
+📍 City: {city}
+
+Trial details jaldi share ki jaayegi. Taiyaar rehna! 💪
+
+— NECPL Team, Guwahati</textarea>
+            </div>
+            <div id="bulkStatus" style="display:none;padding:12px;background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.3);font-size:13px;font-family:'Hind',sans-serif;color:#f0a500;margin-bottom:12px;"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-head"><h3>📊 CSV EXPORT</h3></div>
+          <div style="padding:16px 20px;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+              <button class="save-btn gold" onclick="exportCSV('all')" style="flex:1;min-width:140px;">⬇️ Export ALL Players</button>
+              <button class="save-btn" onclick="exportCSV('pending')" style="flex:1;min-width:140px;">⏳ Export PENDING</button>
+              <button class="save-btn" onclick="exportCSV('approved')" style="flex:1;min-width:140px;background:#1a6b2e;">✅ Export APPROVED</button>
+            </div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.8;">CSV mein yeh sab milega: Name, Age, Phone, City, Role, Experience, Type, Status, Player ID, Reg Date, Reg Time</div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-head"><h3>⏰ COUNTDOWN TIMER CONTROL</h3></div>
+          <div style="padding:16px 20px;">
+            <div class="ctrl-group"><label class="ctrl-label">Registration Deadline</label><div class="ctrl-desc">Site pe countdown timer is date tak countdown karega</div><input class="ctrl-input" type="datetime-local" id="cd_deadline" style="max-width:280px;"></div>
+            <div class="ctrl-group"><label class="ctrl-label">Countdown Title</label><input class="ctrl-input" id="cd_title" placeholder="REGISTRATION CLOSES IN"></div>
+            <div class="ctrl-group"><label class="ctrl-label">Countdown Subtitle</label><input class="ctrl-input" id="cd_subtitle" placeholder="NECPL SEASON 1 · GUWAHATI, ASSAM"></div>
+            <div class="ctrl-group"><button class="save-btn" onclick="saveCountdown()">💾 SAVE — COUNTDOWN LIVE UPDATE →</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUSH NOTIFICATIONS / BROADCAST -->
+      <div class="section" id="tab-broadcast">
+        <div class="panel">
+          <div class="panel-head"><h3>📲 PUSH NOTIFICATION BROADCAST</h3></div>
+          <div style="padding:16px 20px;">
+            <div class="ctrl-desc" style="margin-bottom:16px;">Sabke phone pe ek saath notification bhejo — approval updates, trial dates, announcements!</div>
+            <div class="ctrl-group">
+              <label class="ctrl-label">Notification Title</label>
+              <input class="ctrl-input" id="bc_title" placeholder="e.g. NECPL — Trial Date Announce!">
+            </div>
+            <div class="ctrl-group">
+              <label class="ctrl-label">Notification Message</label>
+              <textarea class="ctrl-textarea" id="bc_body" placeholder="e.g. NECPL Season 1 ka trial 5 April ko hoga. Guwahati Cricket Ground, subah 9 baje. Tayaar rehna! 🏏"></textarea>
+            </div>
+            <div id="bcStatus" style="display:none;padding:12px;border-radius:6px;font-size:13px;font-family:'Hind',sans-serif;margin-bottom:12px;"></div>
+            <button class="save-btn gold" onclick="sendBroadcast()" style="width:100%;">📲 SEND TO ALL — ABHI BHEJO →</button>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-head"><h3>📋 BROADCAST HISTORY</h3></div>
+          <div style="padding:16px 20px;">
+            <div id="bcHistory" style="display:flex;flex-direction:column;gap:10px;">
+              <div style="color:var(--muted);font-size:13px;font-family:'Hind',sans-serif;">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-head"><h3>📊 SUBSCRIBERS</h3></div>
+          <div style="padding:16px 20px;">
+            <div id="subscriberCount" style="font-family:'Teko',sans-serif;font-size:42px;color:#f0a500;letter-spacing:2px;">—</div>
+            <div style="font-size:12px;color:var(--muted);font-family:'Hind',sans-serif;margin-top:4px;">Players jinhone notifications allow ki hain</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ CONTROL -->
+      <div class="section" id="tab-faq">
+        <div class="panel">
+          <div class="panel-head"><h3>❓ FAQ MANAGER</h3></div>
+          <div style="padding:16px 20px 0;">
+            <div class="ctrl-desc" style="margin-bottom:16px;">Nayi FAQ add karo ya purani edit karo — website pe real-time update hoga</div>
+            <div id="faqAdminList" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;"></div>
+            <button onclick="addFaqRow()" style="width:100%;padding:12px;background:rgba(240,165,0,0.1);border:2px dashed rgba(240,165,0,0.4);color:#f0a500;font-family:'Teko',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;">+ NAYI FAQ ADD KARO</button>
+            <div class="ctrl-group" style="margin-top:16px;"><button class="save-btn gold" onclick="saveFAQ()">💾 SAVE FAQ — WEBSITE PE LIVE →</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HERO CONTROL -->
+      <div class="section" id="tab-hero">
+        <div class="panel">
+          <div class="panel-head"><h3>🏠 HERO SECTION — Real-time Edit</h3></div>
+          <div class="ctrl-group"><label class="ctrl-label">Title Line 1 (e.g. NORTHEAST)</label><input class="ctrl-input" id="h_t1" placeholder="NORTHEAST"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Title Line 2 (e.g. CRICKET)</label><input class="ctrl-input" id="h_t2" placeholder="CRICKET"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Title Line 3 — Outline (e.g. PREMIER)</label><input class="ctrl-input" id="h_t3" placeholder="PREMIER"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Season Tag</label><input class="ctrl-input" id="h_season" placeholder="Season 1 · Now Registering"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Description Paragraph</label><textarea class="ctrl-textarea" id="h_desc" placeholder="India's most exciting franchise-based cricket league..."></textarea></div>
+          <div class="ctrl-group"><button class="save-btn" onclick="saveSection('hero')">💾 SAVE — WEBSITE PE LIVE HO JAAYEGA →</button></div>
+        </div>
+      </div>
+
+      <!-- TICKER & NOTICE -->
+      <div class="section" id="tab-ticker">
+        <div class="panel">
+          <div class="panel-head"><h3>📢 TICKER CONTROL</h3></div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Ticker Show/Hide</h4><p>Off karne par upar ki patti hat jaayegi</p></div>
+            <label class="toggle"><input type="checkbox" id="t_visible" checked><span class="t-slider"></span><span class="t-knob"></span></label>
+          </div>
+          <div class="ctrl-group">
+            <label class="ctrl-label">🏫 Ticker Text</label>
+            <div class="ctrl-desc">Yeh text real-time sabke phone mein dikhega</div>
+            <textarea class="ctrl-textarea" id="t_ticker" placeholder="School aur College ke Players ke liye NECPL Mein Aao ★ Apne School ka Naam Roshan Karo..."></textarea>
+          </div>
+          <div class="ctrl-group"><label class="ctrl-label">Ticker Speed (seconds — kam = tez)</label><input class="ctrl-input" id="t_speed" type="number" placeholder="38" min="10" max="100" style="max-width:120px;"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Ticker Background Color</label><div class="color-row"><div class="cswatch sel" style="background:#f0a500;" onclick="pickColor('tickerBg','#f0a500',this)"></div><div class="cswatch" style="background:#1a6b2e;" onclick="pickColor('tickerBg','#1a6b2e',this)"></div><div class="cswatch" style="background:#e74c3c;" onclick="pickColor('tickerBg','#e74c3c',this)"></div><div class="cswatch" style="background:#3498db;" onclick="pickColor('tickerBg','#3498db',this)"></div><input type="color" value="#f0a500" style="width:34px;height:34px;border:none;cursor:pointer;" onchange="pickColor('tickerBg',this.value,null)"></div></div>
+          <div class="ctrl-group"><label class="ctrl-label">Ticker Text Color</label><div class="color-row"><div class="cswatch sel" style="background:#0d1f0f;" onclick="pickColor('tickerColor','#0d1f0f',this)"></div><div class="cswatch" style="background:#ffffff;" onclick="pickColor('tickerColor','#ffffff',this)"></div><div class="cswatch" style="background:#f0a500;" onclick="pickColor('tickerColor','#f0a500',this)"></div><input type="color" value="#0d1f0f" style="width:34px;height:34px;border:none;cursor:pointer;" onchange="pickColor('tickerColor',this.value,null)"></div></div>
+          <div class="ctrl-group"><button class="save-btn" onclick="saveSection('ticker')">💾 SAVE — SABKE PHONE MEIN TURANT →</button></div>
+        </div>
+      </div>
+
+      <!-- FEES -->
+      <div class="section" id="tab-fees">
+        <div class="panel">
+          <div class="panel-head"><h3>💰 FEES & PRIZE CONTROL</h3></div>
+          <div class="ctrl-group">
+            <label class="ctrl-label">Registration Fees</label>
+            <div class="ctrl-row">
+              <div><label class="ctrl-label">Player Fee (₹)</label><input class="ctrl-input" id="f_pFee" placeholder="500" type="number"></div>
+              <div><label class="ctrl-label">Team Fee (₹)</label><input class="ctrl-input" id="f_tFee" placeholder="30000" type="number"></div>
+            </div>
+          </div>
+          <div class="ctrl-group"><label class="ctrl-label">Player Base Price (₹)</label><input class="ctrl-input" id="f_base" placeholder="7000" type="number"></div>
+          <div class="ctrl-group">
+            <label class="ctrl-label">Prize Pool</label>
+            <div class="ctrl-row">
+              <div><label class="ctrl-label">1st Prize</label><input class="ctrl-input" id="f_p1" placeholder="e.g. 5,00,000"></div>
+              <div><label class="ctrl-label">2nd Prize</label><input class="ctrl-input" id="f_p2" placeholder="e.g. 2,50,000"></div>
+            </div>
+          </div>
+          <div class="ctrl-group"><label class="ctrl-label">UPI ID (Payment)</label><input class="ctrl-input" id="f_upi" placeholder="bihariiii@ptyes"></div>
+          <div class="ctrl-group"><button class="save-btn gold" onclick="saveSection('fees')">💾 SAVE FEES — WEBSITE PE UPDATE →</button></div>
+        </div>
+      </div>
+
+      <!-- RULES -->
+      <div class="section" id="tab-rules">
+        <div class="panel">
+          <div class="panel-head"><h3>📜 TOURNAMENT RULES</h3></div>
+          <div class="ctrl-group">
+            <div class="ctrl-row">
+              <div><label class="ctrl-label">Total Overs</label><input class="ctrl-input" id="r_overs" placeholder="10" type="number"></div>
+              <div><label class="ctrl-label">Powerplay Overs</label><input class="ctrl-input" id="r_pp" placeholder="2" type="number"></div>
+            </div>
+          </div>
+          <div class="ctrl-group"><label class="ctrl-label">Super Charge Overs</label><input class="ctrl-input" id="r_sc" placeholder="1" type="number" style="max-width:200px;"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Wide Ball Rule</label><input class="ctrl-input" id="r_wide" placeholder="2 Runs + Extra Ball"></div>
+          <div class="ctrl-group"><label class="ctrl-label">No Ball Rule</label><input class="ctrl-input" id="r_noball" placeholder="2 Runs + Free Hit"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Hat-trick Sixes Bonus</label><input class="ctrl-input" id="r_hat" placeholder="3 Sixes = +3 Bonus Runs"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Extra Custom Rule</label><textarea class="ctrl-textarea" id="r_extra" placeholder="Koi bhi extra rule..."></textarea></div>
+          <div class="ctrl-group"><button class="save-btn" onclick="saveSection('rules')">💾 SAVE RULES — LIVE UPDATE →</button></div>
+        </div>
+      </div>
+
+      <!-- THEME -->
+      <div class="section" id="tab-theme">
+        <div class="panel">
+          <div class="panel-head"><h3>🎨 WEBSITE THEME & COLORS</h3></div>
+          <div class="ctrl-group">
+            <label class="ctrl-label">Primary Color</label>
+            <div class="color-row">
+              <div class="cswatch sel" style="background:#1a6b2e;" onclick="pickColor('primary','#1a6b2e',this)"></div>
+              <div class="cswatch" style="background:#1a4a8a;" onclick="pickColor('primary','#1a4a8a',this)"></div>
+              <div class="cswatch" style="background:#6b1a1a;" onclick="pickColor('primary','#6b1a1a',this)"></div>
+              <div class="cswatch" style="background:#1a5a6b;" onclick="pickColor('primary','#1a5a6b',this)"></div>
+              <div class="cswatch" style="background:#4a1a6b;" onclick="pickColor('primary','#4a1a6b',this)"></div>
+              <input type="color" value="#1a6b2e" style="width:34px;height:34px;border:none;cursor:pointer;" onchange="pickColor('primary',this.value,null)">
+            </div>
+          </div>
+          <div class="ctrl-group">
+            <label class="ctrl-label">Accent Color (Gold/Highlight)</label>
+            <div class="color-row">
+              <div class="cswatch sel" style="background:#f0a500;" onclick="pickColor('accent','#f0a500',this)"></div>
+              <div class="cswatch" style="background:#e74c3c;" onclick="pickColor('accent','#e74c3c',this)"></div>
+              <div class="cswatch" style="background:#3498db;" onclick="pickColor('accent','#3498db',this)"></div>
+              <div class="cswatch" style="background:#2ecc71;" onclick="pickColor('accent','#2ecc71',this)"></div>
+              <div class="cswatch" style="background:#e91e8c;" onclick="pickColor('accent','#e91e8c',this)"></div>
+              <input type="color" value="#f0a500" style="width:34px;height:34px;border:none;cursor:pointer;" onchange="pickColor('accent',this.value,null)">
+            </div>
+          </div>
+          <div class="ctrl-group"><button class="save-btn gold" onclick="saveSection('theme')">🎨 APPLY THEME — SABKE PHONE PE →</button></div>
+        </div>
+      </div>
+
+      <!-- REG CONTROL -->
+      <div class="section" id="tab-regctrl">
+        <div class="panel">
+          <div class="panel-head"><h3>🔐 REGISTRATION CONTROL</h3></div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Registration Open/Close</h4><p>Band karne par Register button disable ho jaayega</p></div>
+            <label class="toggle"><input type="checkbox" id="rc_open" checked><span class="t-slider"></span><span class="t-knob"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Team Registration</h4><p>Team registration alag se band karo</p></div>
+            <label class="toggle"><input type="checkbox" id="rc_team" checked><span class="t-slider"></span><span class="t-knob"></span></label>
+          </div>
+          <div class="ctrl-group"><label class="ctrl-label">Registration Deadline</label><input class="ctrl-input" id="rc_deadline" type="date"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Custom Message (Website pe dikhega)</label><textarea class="ctrl-textarea" id="rc_msg" placeholder="e.g. Last date March 30 hai. Jaldi karein!"></textarea></div>
+          <div class="ctrl-group"><button class="save-btn" onclick="saveSection('regctrl')">💾 SAVE — REAL-TIME UPDATE →</button></div>
+        </div>
+      </div>
+
+      <!-- NAV CONTROL -->
+      <div class="section" id="tab-nav">
+        <div class="panel">
+          <div class="panel-head"><h3>🔝 NAV BAR CONTROL</h3></div>
+          <div class="ctrl-group"><label class="ctrl-label">Logo Name</label><input class="ctrl-input" id="nav_logo" placeholder="NECPL"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Logo Subtitle</label><input class="ctrl-input" id="nav_sub" placeholder="Northeast Cricket Premier League"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Register Button Text</label><input class="ctrl-input" id="nav_btn" placeholder="REGISTER"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Register Button Color</label><div class="color-row"><div class="cswatch sel" style="background:#f0a500;" onclick="pickColor('navBtn','#f0a500',this)"></div><div class="cswatch" style="background:#2ecc71;" onclick="pickColor('navBtn','#2ecc71',this)"></div><div class="cswatch" style="background:#e74c3c;" onclick="pickColor('navBtn','#e74c3c',this)"></div><div class="cswatch" style="background:#3498db;" onclick="pickColor('navBtn','#3498db',this)"></div><input type="color" value="#f0a500" style="width:34px;height:34px;border:none;cursor:pointer;" onchange="pickColor('navBtn',this.value,null)"></div></div>
+          <div class="ctrl-group"><label class="ctrl-label">Nav Background Color</label><div class="color-row"><div class="cswatch sel" style="background:#0d1f0f;" onclick="pickColor('navBg','#0d1f0f',this)"></div><div class="cswatch" style="background:#1a1a2e;" onclick="pickColor('navBg','#1a1a2e',this)"></div><div class="cswatch" style="background:#1a0a0a;" onclick="pickColor('navBg','#1a0a0a',this)"></div><input type="color" value="#0d1f0f" style="width:34px;height:34px;border:none;cursor:pointer;" onchange="pickColor('navBg',this.value,null)"></div></div>
+          <div class="ctrl-group"><button class="save-btn" onclick="saveSection('nav')">💾 SAVE NAV — LIVE UPDATE →</button></div>
+        </div>
+      </div>
+
+      <!-- CONTACT & VENUE -->
+      <div class="section" id="tab-contact">
+        <div class="panel">
+          <div class="panel-head"><h3>📞 CONTACT & VENUE</h3></div>
+          <div class="ctrl-group"><label class="ctrl-label">Admin WhatsApp Number</label><div class="ctrl-desc">Yeh number registration notifications receive karega</div><input class="ctrl-input" id="con_wa" placeholder="7520947031" type="tel"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Trial Venue</label><input class="ctrl-input" id="con_venue" placeholder="Guwahati, Assam"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Email</label><input class="ctrl-input" id="con_email" placeholder="necpl@gmail.com" type="email"></div>
+          <div class="ctrl-group"><label class="ctrl-label">UPI ID (Payment)</label><input class="ctrl-input" id="con_upi" placeholder="bihariiii@ptyes"></div>
+          <div class="ctrl-group"><button class="save-btn gold" onclick="saveSection('contact')">💾 SAVE CONTACT INFO →</button></div>
+        </div>
+      </div>
+
+      <!-- FLOATING BUTTON -->
+      <div class="section" id="tab-floatbtn">
+        <div class="panel">
+          <div class="panel-head"><h3>🔘 FLOATING BUTTON CONTROL</h3></div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Button Show/Hide</h4><p>Website pe floating button dikhao ya chhupaao</p></div>
+            <label class="toggle"><input type="checkbox" id="fb_visible" checked><span class="t-slider"></span><span class="t-knob"></span></label>
+          </div>
+          <div class="ctrl-group"><label class="ctrl-label">Button Text</label><input class="ctrl-input" id="fb_text" placeholder="CHECK STATUS"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Button Color</label><div class="color-row"><div class="cswatch sel" style="background:#1a6b2e;" onclick="pickColor('fbBg','#1a6b2e',this)"></div><div class="cswatch" style="background:#f0a500;" onclick="pickColor('fbBg','#f0a500',this)"></div><div class="cswatch" style="background:#e74c3c;" onclick="pickColor('fbBg','#e74c3c',this)"></div><div class="cswatch" style="background:#3498db;" onclick="pickColor('fbBg','#3498db',this)"></div><input type="color" value="#1a6b2e" style="width:34px;height:34px;border:none;cursor:pointer;" onchange="pickColor('fbBg',this.value,null)"></div></div>
+          <div class="ctrl-group"><label class="ctrl-label">Button Position</label><select class="ctrl-select" id="fb_pos"><option value="right">Right Side</option><option value="left">Left Side</option></select></div>
+          <div class="ctrl-group"><button class="save-btn" onclick="saveSection('floatbtn')">💾 SAVE BUTTON — LIVE UPDATE →</button></div>
+        </div>
+      </div>
+
+      <!-- POPUP ANNOUNCEMENT -->
+      <div class="section" id="tab-popup">
+        <div class="panel">
+          <div class="panel-head"><h3>💬 POPUP ANNOUNCEMENT</h3></div>
+          <div class="ctrl-desc" style="padding:14px 20px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);">Website khulte hi player ko popup dikhega — important announcements ke liye</div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Popup On/Off</h4><p>Band karne par popup nahi aayega</p></div>
+            <label class="toggle"><input type="checkbox" id="pop_visible"><span class="t-slider"></span><span class="t-knob"></span></label>
+          </div>
+          <div class="ctrl-group"><label class="ctrl-label">Popup Emoji</label><input class="ctrl-input" id="pop_emoji" placeholder="📢" style="max-width:120px;font-size:24px;"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Popup Title</label><input class="ctrl-input" id="pop_title" placeholder="IMPORTANT ANNOUNCEMENT"></div>
+          <div class="ctrl-group"><label class="ctrl-label">Popup Message</label><textarea class="ctrl-textarea" id="pop_text" placeholder="e.g. Trial date change ho gayi hai — Ab 25 March ko hoga. Venue same rahega."></textarea></div>
+          <div class="ctrl-group"><label class="ctrl-label">Delay (seconds before popup appears)</label><input class="ctrl-input" id="pop_delay" type="number" placeholder="2" min="0" max="30" style="max-width:120px;"></div>
+          <div class="ctrl-group"><button class="save-btn gold" onclick="saveSection('popup')">💾 SAVE POPUP — SABKE PHONE PE →</button></div>
+        </div>
+      </div>
+
+      <!-- NOTICE BAR -->
+      <div class="section" id="tab-noticebar">
+        <div class="panel">
+          <div class="panel-head"><h3>🚨 NOTICE BAR (Bottom Red Bar)</h3></div>
+          <div class="ctrl-desc" style="padding:14px 20px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);">Website ke neeche ek red bar dikhega — urgent notices ke liye</div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Notice Bar On/Off</h4><p>Off karne par bar hat jaayega</p></div>
+            <label class="toggle"><input type="checkbox" id="nb_visible"><span class="t-slider"></span><span class="t-knob"></span></label>
+          </div>
+          <div class="ctrl-group"><label class="ctrl-label">Notice Text</label><textarea class="ctrl-textarea" id="nb_text" placeholder="e.g. Registration kal band ho jayegi — Abhi Register Karein! Last Date: 30 March"></textarea></div>
+          <div class="ctrl-group"><label class="ctrl-label">Bar Background Color</label><div class="color-row"><div class="cswatch sel" style="background:#c0392b;" onclick="pickColor('nbBg','#c0392b',this)"></div><div class="cswatch" style="background:#1a6b2e;" onclick="pickColor('nbBg','#1a6b2e',this)"></div><div class="cswatch" style="background:#f0a500;" onclick="pickColor('nbBg','#f0a500',this)"></div><div class="cswatch" style="background:#1a1a2e;" onclick="pickColor('nbBg','#1a1a2e',this)"></div><input type="color" value="#c0392b" style="width:34px;height:34px;border:none;cursor:pointer;" onchange="pickColor('nbBg',this.value,null)"></div></div>
+          <div class="ctrl-group"><button class="save-btn" onclick="saveSection('noticebar')">💾 SAVE NOTICE — TURANT LIVE →</button></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- CARD MODAL -->
+<div id="cardModal">
+  <div style="text-align:center;">
+    <div id="cardPreview"></div>
+    <div class="card-modal-btns">
+      <button class="wa-btn" onclick="sendCardWA()">📱 WhatsApp</button>
+      <button class="dl-btn" onclick="downloadCard()">⬇ Download</button>
+      <button class="close-btn-card" onclick="closeCard()">✕</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let players=[], currentFilter='all', currentSearch='', activePlayer=null;
+let themeColors={primary:'#1a6b2e',accent:'#f0a500'};
+let fbDB,fbRef,fbSet,fbUpdate,fbOnValue;
+
+async function initFirebase(){
+  const {initializeApp}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const {getDatabase,ref,set,update,onValue}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  const cfg={apiKey:"AIzaSyD7rrQFF1gYwFAafhWDElcfaIi-HTQg7v4",authDomain:"necpl2.firebaseapp.com",databaseURL:"https://necpl2-default-rtdb.firebaseio.com",projectId:"necpl2",storageBucket:"necpl2.firebasestorage.app",messagingSenderId:"514850783620",appId:"1:514850783620:web:41c747ee1bd9e438031dd1"};
+  const app=initializeApp(cfg);
+  fbDB=getDatabase(app); fbRef=ref; fbSet=set; fbUpdate=update; fbOnValue=onValue;
+
+  // Real-time players
+  fbOnValue(fbRef(fbDB,'players'),snap=>{
+    players=[];
+    snap.forEach(c=>players.push({_key:c.key,...c.val()}));
+    window._allPlayers = Object.fromEntries(players.map(p=>[p._key,p]));
+    renderAll();
+    document.getElementById('pendingBadge').textContent=players.filter(p=>p.status==='pending').length;
+  });
+
+  // Load saved settings into fields
+  fbOnValue(fbRef(fbDB,'siteContent'),snap=>{
+    const d=snap.val()||{};
+    const sv=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined&&val!==null)el.value=val;};
+    sv('h_t1',d.hero?.t1); sv('h_t2',d.hero?.t2); sv('h_t3',d.hero?.t3);
+    sv('h_season',d.hero?.season); sv('h_desc',d.hero?.desc);
+    sv('t_ticker',d.ticker?.text); sv('t_notice',d.ticker?.notice);
+    sv('f_pFee',d.fees?.pFee); sv('f_tFee',d.fees?.tFee); sv('f_base',d.fees?.base);
+    sv('f_p1',d.fees?.p1); sv('f_p2',d.fees?.p2);
+    sv('r_overs',d.rules?.overs); sv('r_pp',d.rules?.pp); sv('r_sc',d.rules?.sc);
+    sv('r_wide',d.rules?.wide); sv('r_noball',d.rules?.noball);
+    sv('r_hat',d.rules?.hat); sv('r_extra',d.rules?.extra);
+    sv('rc_deadline',d.regCtrl?.deadline); sv('rc_msg',d.regCtrl?.msg);
+    if(d.regCtrl?.open===false) document.getElementById('rc_open').checked=false;
+    if(d.regCtrl?.team===false) document.getElementById('rc_team').checked=false;
+    loadFaqAdmin(d);
+  });
+
+  showToast('🔥 Firebase connected! Real-time live hai.');
+  loadBroadcastHistory();
+  loadSubscriberCount();
+}
+
+function doLogin(){
+  const u=document.getElementById('adminUser').value;
+  const p=document.getElementById('adminPass').value;
+  if(u==='admin'&&p==='Aayu8090'){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('dashboard').style.display='flex';
+    initFirebase();
+  } else document.getElementById('loginErr').style.display='block';
+}
+document.getElementById('adminPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+function doLogout(){document.getElementById('loginScreen').style.display='flex';document.getElementById('dashboard').style.display='none';}
+
+function switchTab(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const T={overview:'OVERVIEW',regs:'REGISTRATIONS',approved:'APPROVED',cards:'ID CARDS',utrSearch:'UTR SEARCH',stats:'STATS & PRINT',bulk:'BULK TOOLS',broadcast:'PUSH NOTIFICATIONS',hero:'HERO SECTION',ticker:'TICKER & NOTICE',fees:'FEES & PRIZES',rules:'TOURNAMENT RULES',theme:'THEME & COLORS',regctrl:'REG. CONTROL',nav:'NAV BAR',contact:'CONTACT & VENUE',floatbtn:'FLOATING BUTTON',popup:'POPUP ANNOUNCEMENT',noticebar:'NOTICE BAR',faq:'FAQ MANAGER'};
+  document.getElementById('pageTitle').textContent=T[id]||id.toUpperCase();
+}
+
+function v(id){const el=document.getElementById(id);return el?el.value:'';}
+function cb(id){const el=document.getElementById(id);return el?el.checked:true;}
+
+async function saveSection(sec){
+  if(!fbDB){showToast('⚠️ Firebase connected nahi');return;}
+  let data={};
+  if(sec==='hero') data={hero:{t1:v('h_t1'),t2:v('h_t2'),t3:v('h_t3'),season:v('h_season'),desc:v('h_desc')}};
+  else if(sec==='ticker') data={ticker:{text:v('t_ticker'),bg:themeColors.tickerBg||'#f0a500',color:themeColors.tickerColor||'#0d1f0f',speed:v('t_speed')||38,visible:cb('t_visible')}};
+  else if(sec==='fees') data={fees:{pFee:v('f_pFee'),tFee:v('f_tFee'),base:v('f_base'),p1:v('f_p1'),p2:v('f_p2'),upi:v('f_upi')}};
+  else if(sec==='rules') data={rules:{overs:v('r_overs'),pp:v('r_pp'),sc:v('r_sc'),wide:v('r_wide'),noball:v('r_noball'),hat:v('r_hat'),extra:v('r_extra')}};
+  else if(sec==='theme') data={theme:{primary:themeColors.primary||'#1a6b2e',accent:themeColors.accent||'#f0a500',dark:themeColors.dark||'#0d1f0f',cream:themeColors.cream||'#f5f0e8'}};
+  else if(sec==='regctrl') data={regCtrl:{open:cb('rc_open'),team:cb('rc_team'),deadline:v('rc_deadline'),msg:v('rc_msg')}};
+  else if(sec==='nav') data={nav:{logoText:v('nav_logo'),logoSub:v('nav_sub'),btnText:v('nav_btn'),btnColor:themeColors.navBtn||'#f0a500',bg:themeColors.navBg||'#0d1f0f'}};
+  else if(sec==='contact') data={contact:{whatsapp:v('con_wa'),venue:v('con_venue'),email:v('con_email'),upi:v('con_upi')}};
+  else if(sec==='floatbtn') data={floatBtn:{visible:cb('fb_visible'),text:v('fb_text'),bg:themeColors.fbBg||'#1a6b2e',position:v('fb_pos')}};
+  else if(sec==='popup') data={popup:{visible:cb('pop_visible'),emoji:v('pop_emoji'),title:v('pop_title'),text:v('pop_text'),delay:parseInt(v('pop_delay'))||2}};
+  else if(sec==='noticebar') data={notice:{visible:cb('nb_visible'),text:v('nb_text'),bg:themeColors.nbBg||'#c0392b',color:'#ffffff'}};
+  await fbUpdate(fbRef(fbDB,'siteContent'),data);
+  showToast('✅ Saved! Sabke phone mein real-time update ho gaya! 🔥');
+}
+
+function pickColor(type,color,el){
+  themeColors[type]=color;
+  if(el){el.closest('.color-row').querySelectorAll('.cswatch').forEach(s=>s.classList.remove('sel'));el.classList.add('sel');}
+}
+function renderAll(){
+  const tot=players.length,pen=players.filter(p=>p.status==='pending').length,
+        app=players.filter(p=>p.status==='approved').length,rej=players.filter(p=>p.status==='rejected').length;
+  document.getElementById('st-total').textContent=tot;
+  document.getElementById('st-pending').textContent=pen;
+  document.getElementById('st-approved').textContent=app;
+  document.getElementById('st-rejected').textContent=rej;
+  document.getElementById('reg-count').textContent=tot+' total';
+  renderOverview(); renderRegTable(); renderApproved(); renderCards(); renderStatsChart();
+}
+
+function ini(name){return(name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+function sbadge(s){
+  if(s==='approved') return '<span class="badge b-approved">✓ Approved</span>';
+  if(s==='rejected') return '<span class="badge b-rejected">✗ Rejected</span>';
+  return '<span class="badge b-pending">⏳ Pending</span>';
+}
+function abtn(p){
+  return `<div class="action-btns">
+    ${p.status!=='approved'?`<button class="btn-ok" onclick="approve('${p._key}')">✓</button>`:''}
+    ${p.status!=='rejected'?`<button class="btn-no" onclick="rejectWithReason('${p._key}')">✗</button>`:''}
+    <button class="btn-eye" onclick="viewCard('${p._key}')">🪪</button>
+    <button class="btn-eye" style="background:rgba(52,152,219,0.15);color:#3498db;" onclick="openNotes('${p._key}')">📝</button>
+  </div>`;
+}
+
+function renderOverview(){
+  const tb=document.getElementById('overviewTable');
+  const list=[...players].reverse().slice(0,8);
+  if(!list.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">Koi registration nahi</td></tr>';return;}
+  tb.innerHTML=list.map(p=>`<tr>
+    <td><div class="player-name">${p.name||'—'}</div><div class="player-detail">${p.regDate||''}</div></td>
+    <td style="font-family:monospace;font-size:12px;">${p.phone||'—'}</td>
+    <td><span class="badge" style="background:rgba(52,152,219,0.1);color:#2980b9;border:1px solid rgba(52,152,219,0.3);">${p.type==='team'?'TEAM':'PLAYER'}</span></td>
+    <td>${p.utr ? `<span style="font-family:monospace;font-size:11px;color:${p.paymentStatus==='verified'?'#2ecc71':'#f0a500'};">${p.utr}${p.paymentStatus==='verified'?' ✅':' ⏳'}</span>` : '<span style="color:var(--muted);font-size:11px;">—</span>'}</td>
+    <td>${sbadge(p.status)}</td><td>${abtn(p)}</td>
+  </tr>`).join('');
+}
+
+function utrBadge(p){
+  if(!p.utr) return '<span style="color:var(--muted);font-size:11px;">No UTR</span>';
+  const verified = p.paymentStatus==='verified';
+  return `<div>
+    <div style="font-family:monospace;font-size:13px;color:${verified?'#2ecc71':'#f0a500'};letter-spacing:1px;">${p.utr}</div>
+    <div style="margin-top:4px;">
+      ${verified
+        ? '<span style="font-size:10px;color:#2ecc71;letter-spacing:1px;">✅ VERIFIED</span>'
+        : `<button onclick="verifyPayment('${p._key}')" style="padding:3px 10px;background:rgba(46,204,95,0.15);border:1px solid rgba(46,204,95,0.4);color:#2ecc71;font-size:10px;cursor:pointer;font-family:Hind,sans-serif;letter-spacing:1px;">VERIFY ✓</button>`
+      }
+    </div>
+  </div>`;
+}
+
+function renderRegTable(){
+  const tb=document.getElementById('regTable');
+  let list=[...players];
+  if(currentFilter!=='all') list=list.filter(p=>p.status===currentFilter);
+  if(currentSearch) list=list.filter(p=>(p.name||'').toLowerCase().includes(currentSearch.toLowerCase())||(p.phone||'').includes(currentSearch));
+  if(!list.length){tb.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--muted);">Koi record nahi</td></tr>';return;}
+  tb.innerHTML=list.map((p,i)=>`<tr>
+    <td style="color:var(--muted);font-size:12px;">${String(i+1).padStart(2,'0')}</td>
+    <td><div class="player-name">${p.name||'—'}${p.notes?'  <span style="font-size:10px;color:#3498db;">📝</span>':''}</div><div class="player-detail">${p.regDate||''} ${p.regTime||''}</div></td>
+    <td>${p.role||'—'}</td><td>${p.age||'—'}</td><td>${p.city||'—'}</td>
+    <td style="font-family:monospace;font-size:12px;">${p.phone||'—'}</td>
+    <td><span class="badge" style="background:rgba(52,152,219,0.1);color:#2980b9;border:1px solid rgba(52,152,219,0.3);">${p.type==='team'?'TEAM':'PLAYER'}</span></td>
+    <td>${utrBadge(p)}</td>
+    <td>${sbadge(p.status)}</td><td>${abtn(p)}</td>
+  </tr>`).join('');
+}
+
+function renderApproved(){
+  const tb=document.getElementById('approvedTable');
+  const list=players.filter(p=>p.status==='approved');
+  if(!list.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">Koi approved player nahi</td></tr>';return;}
+  tb.innerHTML=list.map(p=>`<tr>
+    <td><div class="player-name">${p.name||'—'}</div></td>
+    <td>${p.role||'—'}</td><td>${p.city||'—'}</td>
+    <td style="font-size:11px;color:var(--muted);">${p.approvedDate||'—'}</td>
+    <td><button class="btn-eye" onclick="viewCard('${p._key}')">🪪 Card</button></td>
+  </tr>`).join('');
+}
+
+function renderCards(){
+  const g=document.getElementById('cardsGrid');
+  const list=players.filter(p=>p.status==='approved');
+  if(!list.length){g.innerHTML='<div style="color:var(--muted);font-size:14px;grid-column:1/-1;text-align:center;padding:40px;">Players approve karo — cards yahan dikhenge</div>';return;}
+  g.innerHTML=list.map(p=>`
+    <div style="background:white;border:1px solid var(--border);padding:16px;text-align:center;cursor:pointer;" onclick="viewCard('${p._key}')">
+      <div style="width:48px;height:48px;background:var(--dark);border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:18px;color:#f0a500;">${ini(p.name)}</div>
+      <div style="font-family:'Teko',sans-serif;font-size:16px;letter-spacing:1px;">${p.name||'—'}</div>
+      <div style="font-size:11px;color:var(--muted);margin:2px 0;">${p.role||'Player'} · ${p.city||'—'}</div>
+      <span class="badge b-approved" style="margin-top:5px;">✓ Approved</span>
+    </div>`).join('');
+}
+
+function filterReg(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderRegTable();}
+function searchReg(val){currentSearch=val;renderRegTable();}
+
+async function verifyPayment(key){
+  if(!fbDB) return;
+  await fbUpdate(fbRef(fbDB,'players/'+key),{paymentStatus:'verified'});
+  showToast('✅ Payment verified! Ab approve karo player ko.');
+}
+
+async function approve(key){
+  const p=players.find(pl=>pl._key===key);if(!p)return;
+  await fbUpdate(fbRef(fbDB,'players/'+key),{status:'approved',approvedDate:new Date().toLocaleDateString('en-IN')});
+  showToast('✅ Approved! WhatsApp bheja ja raha hai...');
+  setTimeout(()=>{
+    const pid=p.id||('NECPL-'+key.slice(-4).toUpperCase());
+    const msg=encodeURIComponent(`🏏 *NECPL Season 1 — Approved!*\n\nCongratulations *${p.name}*! 🎉\n\nAapki registration approved ho gayi!\n\n👤 Name: ${p.name}\n📅 Age: ${p.age}\n🏏 Role: ${p.role||'Player'}\n📍 City: ${p.city}\n🆔 ID: ${pid}\n📍 Trial: Guwahati, Assam\n\n— *NECPL Team*`);
+    window.open(`https://wa.me/91${(p.phone||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
+    setTimeout(()=>viewCard(key),800);
+  },600);
+}
+
+async function reject(key){
+  if(!confirm('Reject karna chahte hain?'))return;
+  await fbUpdate(fbRef(fbDB,'players/'+key),{status:'rejected'});
+  showToast('❌ Rejected.');
+}
+
+// 1. REJECT WITH REASON
+async function rejectWithReason(key){
+  const p=players.find(pl=>pl._key===key);if(!p)return;
+  const reason=prompt(`${p.name} ko reject karne ka reason:\n(Yeh reason player ko WhatsApp pe jaayega)`);
+  if(reason===null)return;
+  await fbUpdate(fbRef(fbDB,'players/'+key),{status:'rejected',rejectReason:reason});
+  showToast('❌ Rejected with reason.');
+  if(p.phone){
+    const msg=encodeURIComponent(`🏏 *NECPL Season 1 — Registration Update*\n\nNamaste *${p.name}*,\n\nDukhad hai ki aapki registration is baar accept nahi ho payi.\n\n📋 *Reason:* ${reason||'Selection criteria match nahi hui.'}\n\nAgle season mein zaroor try karein! 🙏\n\n— *NECPL Team*`);
+    setTimeout(()=>window.open(`https://wa.me/91${p.phone.replace(/\D/g,'')}?text=${msg}`,'_blank'),400);
+  }
+}
+
+// 2. PLAYER NOTES
+function openNotes(key){
+  const p=players.find(pl=>pl._key===key);if(!p)return;
+  const existing=p.notes||'';
+  let modal=document.getElementById('notesModal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='notesModal';
+    modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:20px;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML=`
+    <div style="background:var(--bg);border:1px solid var(--border);width:100%;max-width:420px;border-top:3px solid #3498db;padding:24px;">
+      <div style="font-family:'Teko',sans-serif;font-size:22px;letter-spacing:2px;color:white;margin-bottom:4px;">📝 PLAYER NOTES</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">${p.name} · ${p.id||key.slice(-5)}</div>
+      <textarea id="noteText" style="width:100%;min-height:120px;background:var(--surface);border:1px solid var(--border);color:white;padding:12px;font-family:'Hind',sans-serif;font-size:14px;resize:vertical;box-sizing:border-box;" placeholder="Admin notes — sirf admin ko dikhega...">${existing}</textarea>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button onclick="saveNote('${key}')" style="flex:1;padding:11px;background:#3498db;color:white;border:none;font-family:'Teko',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;">💾 SAVE NOTE</button>
+        <button onclick="document.getElementById('notesModal').style.display='none'" style="padding:11px 16px;background:var(--surface);color:var(--muted);border:1px solid var(--border);font-family:'Hind',sans-serif;cursor:pointer;">Cancel</button>
+      </div>
+    </div>`;
+  modal.style.display='flex';
+}
+
+async function saveNote(key){
+  const text=document.getElementById('noteText')?.value||'';
+  await fbUpdate(fbRef(fbDB,'players/'+key),{notes:text,notesUpdated:new Date().toLocaleString('en-IN')});
+  document.getElementById('notesModal').style.display='none';
+  showToast('📝 Note saved!');
+}
+
+// 3. UTR SEARCH
+function searchByUTR(){
+  const utr=(document.getElementById('utrSearchInput')?.value||'').trim();
+  if(!utr){showToast('UTR number daalo');return;}
+  const found=players.find(p=>(p.utr||'')===utr);
+  const res=document.getElementById('utrSearchResult');
+  if(!res)return;
+  if(found){
+    res.innerHTML=`<div style="background:rgba(46,204,95,0.1);border:1px solid rgba(46,204,95,0.3);padding:14px;margin-top:10px;">
+      <div style="font-family:'Teko',sans-serif;font-size:18px;color:white;">${found.name}</div>
+      <div style="font-size:12px;color:var(--muted);margin:4px 0;">${found.phone} · ${found.role||'—'} · ${found.city||'—'}</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        ${sbadge(found.status)}
+        <span style="font-size:11px;color:${found.paymentStatus==='verified'?'#2ecc71':'#f0a500'};">UTR: ${found.utr} ${found.paymentStatus==='verified'?'✅':'⏳'}</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">${abtn(found)}</div>
+    </div>`;
+  } else {
+    res.innerHTML=`<div style="padding:14px;color:var(--muted);font-size:13px;">❌ Koi player nahi mila UTR: ${utr}</div>`;
+  }
+}
+
+// 4. PRINT ALL ID CARDS
+function printAllCards(){
+  const approved=players.filter(p=>p.status==='approved');
+  if(!approved.length){showToast('Koi approved player nahi');return;}
+  const w=window.open('','_blank');
+  const cards=approved.map(p=>{
+    const pid=p.id||('NECPL-'+p._key.slice(-4).toUpperCase());
+    const jersey=pid.replace(/\D/g,'').slice(-3)||'001';
+    return `<div class="id-card" style="page-break-inside:avoid;margin:10px;display:inline-block;">
+      <div style="background:linear-gradient(90deg,#f0a500,#e8c44a);height:5px;"></div>
+      <div style="background:linear-gradient(145deg,#0d1f0f,#1a4a22);padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div style="width:36px;height:36px;background:#f0a500;display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:10px;font-weight:700;color:#0d1f0f;">NECPL</div>
+        <div style="font-family:'Teko',sans-serif;font-size:13px;color:#fff;letter-spacing:1px;">NORTHEAST CRICKET<br><span style="font-size:8px;color:rgba(255,255,255,0.4);">Premier League · Season 1</span></div>
+      </div>
+      <div style="background:linear-gradient(145deg,#0d1f0f,#1a4a22);padding:14px 16px;">
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <div style="width:60px;height:70px;background:rgba(255,255,255,0.06);border:2px solid rgba(240,165,0,0.4);display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:24px;color:#f0a500;">${(p.name||'P').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+          <div>
+            <div style="font-family:'Teko',sans-serif;font-size:20px;color:#fff;letter-spacing:1px;">${(p.name||'').toUpperCase()}</div>
+            <div style="background:rgba(240,165,0,0.15);border:1px solid rgba(240,165,0,0.4);color:#f0a500;font-size:9px;letter-spacing:2px;padding:2px 7px;display:inline-block;margin:4px 0;">${p.role||'PLAYER'}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.5);">Age: ${p.age||'—'} · ${p.city||'—'}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(255,255,255,0.08);margin-bottom:10px;">
+          <div style="padding:7px;text-align:center;background:#0f2614;"><span style="font-family:'Teko',sans-serif;font-size:18px;color:#f0a500;display:block;">#${jersey}</span><span style="font-size:7px;color:rgba(255,255,255,0.3);">JERSEY</span></div>
+          <div style="padding:7px;text-align:center;background:#0f2614;"><span style="font-family:'Teko',sans-serif;font-size:18px;color:#f0a500;display:block;">${p.exp||'—'}</span><span style="font-size:7px;color:rgba(255,255,255,0.3);">EXPERIENCE</span></div>
+          <div style="padding:7px;text-align:center;background:#0f2614;"><span style="font-family:'Teko',sans-serif;font-size:18px;color:#f0a500;display:block;">GHY</span><span style="font-size:7px;color:rgba(255,255,255,0.3);">VENUE</span></div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.3);">${pid}</span>
+          <span style="font-size:9px;color:#2ecc5f;">✓ VERIFIED</span>
+        </div>
+      </div>
+      <div style="height:4px;background:linear-gradient(90deg,#2ecc5f,#f0a500,#2ecc5f);"></div>
+    </div>`;
+  }).join('');
+  w.document.write(`<!DOCTYPE html><html><head><title>NECPL ID Cards</title><style>body{background:#1a1a1a;font-family:sans-serif;padding:20px;}@media print{body{background:#1a1a1a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><div style="text-align:center;color:white;font-family:'Arial';font-size:20px;margin-bottom:20px;">NECPL Season 1 — ${approved.length} Player ID Cards</div>${cards}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
+  showToast(`🖨️ ${approved.length} ID cards print ho rahe hain!`);
+}
+
+// 5. STATS CHART
+function renderStatsChart(){
+  const cityMap={}, roleMap={};
+  players.forEach(p=>{
+    const c=p.city||'Unknown'; cityMap[c]=(cityMap[c]||0)+1;
+    const r=p.role||'Unknown'; roleMap[r]=(roleMap[r]||0)+1;
+  });
+
+  // City chart
+  const cityEl=document.getElementById('cityChart');
+  const roleEl=document.getElementById('roleChart');
+  if(!cityEl||!roleEl)return;
+
+  const colors=['#f0a500','#1a6b2e','#3498db','#e74c3c','#9b59b6','#2ecc71','#e67e22','#1abc9c'];
+
+  function makeBar(map, el){
+    const total=Object.values(map).reduce((a,b)=>a+b,0)||1;
+    const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    el.innerHTML=sorted.map(([k,v],i)=>`
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="color:white;font-family:'Hind',sans-serif;">${k}</span>
+          <span style="color:${colors[i%colors.length]};font-family:'Teko',sans-serif;font-size:14px;">${v}</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;height:8px;">
+          <div style="height:100%;background:${colors[i%colors.length]};width:${Math.round(v/total*100)}%;transition:width .5s;"></div>
+        </div>
+      </div>`).join('');
+  }
+  makeBar(cityMap, cityEl);
+  makeBar(roleMap, roleEl);
+}
+
+function viewCard(key){
+  const p=players.find(pl=>pl._key===key||pl.id===key);if(!p)return;
+  activePlayer=p;
+  const pid=p.id||('NECPL-'+p._key.slice(-4).toUpperCase());
+  const jersey=pid.replace(/\D/g,'').slice(-3)||'001';
+  document.getElementById('cardPreview').innerHTML=`
+  <div class="id-card" id="theCard">
+    <div class="card-top-stripe"></div>
+    <div class="card-header">
+      <div class="card-badge">NECPL</div>
+      <div class="card-league"><h4>NORTHEAST CRICKET</h4><span>Premier League · Official ID</span></div>
+      <div class="card-s-tag">S1</div>
+    </div>
+    <div class="card-body">
+      <div class="card-player-row">
+        <div class="card-photo"><div class="card-initials">${ini(p.name)}</div></div>
+        <div class="card-info">
+          <div class="card-pname">${(p.name||'').toUpperCase()}</div>
+          <div class="card-role">${p.role||'PLAYER'}</div>
+          <div class="card-meta">
+            <div class="card-meta-row"><span class="card-meta-key">AGE</span><span class="card-meta-val">${p.age} Yrs</span></div>
+            <div class="card-meta-row"><span class="card-meta-key">CITY</span><span class="card-meta-val">${p.city||'—'}</span></div>
+            <div class="card-meta-row"><span class="card-meta-key">SEASON</span><span class="card-meta-val">S1 · 2026</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card-stats">
+        <div class="card-stat"><span class="card-stat-val">#${jersey}</span><span class="card-stat-key">Jersey</span></div>
+        <div class="card-stat"><span class="card-stat-val">${p.exp||'NEW'}</span><span class="card-stat-key">Exp</span></div>
+        <div class="card-stat"><span class="card-stat-val">GHY</span><span class="card-stat-key">Trial</span></div>
+      </div>
+    </div>
+    <div class="card-foot">
+      <div class="card-id-txt">ID: ${pid}</div>
+      <div class="card-verified">✓ VERIFIED</div>
+    </div>
+    <div class="card-bottom-stripe"></div>
+  </div>`;
+  document.getElementById('cardModal').classList.add('open');
+}
+
+function closeCard(){document.getElementById('cardModal').classList.remove('open');activePlayer=null;}
+
+function sendCardWA(){
+  if(!activePlayer)return;
+  const p=activePlayer;
+  const pid=p.id||('NECPL-'+p._key.slice(-4).toUpperCase());
+  const msg=encodeURIComponent(`🏏 *NECPL — Aapka Player ID Card!*\n\nCongratulations *${p.name}*! 🎉\n\n✅ Aap officially NECPL Season 1 registered player hain!\n\n🪪 *PLAYER CARD:*\n━━━━━━━━━\n👤 ${p.name}\n📅 Age: ${p.age}\n🏏 ${p.role||'Player'}\n📍 ${p.city}\n🆔 ${pid}\n━━━━━━━━━\n📍 Trial: Guwahati, Assam\nAll the best! 🏆\n— *NECPL Team*`);
+  window.open(`https://wa.me/91${(p.phone||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
+  showToast('📱 WhatsApp open ho raha hai!');
+}
+
+function downloadCard(){
+  const card=document.getElementById('theCard');if(!card)return;
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;700&family=Hind&display=swap" rel="stylesheet"><style>body{margin:0;padding:40px;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;}.id-card{width:340px;background:linear-gradient(145deg,#0d1f0f,#1a4a22,#0d1f0f);border:1px solid rgba(240,165,0,0.4);font-family:'Hind',sans-serif;overflow:hidden;}.card-top-stripe{background:linear-gradient(90deg,#f0a500,#e8c44a,#f0a500);height:5px;}.card-header{padding:16px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.08);}.card-badge{width:42px;height:42px;background:#f0a500;display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:11px;font-weight:700;color:#0d1f0f;flex-shrink:0;}.card-league h4{font-family:'Teko',sans-serif;font-size:15px;color:#fff;letter-spacing:2px;}.card-league span{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;}.card-s-tag{font-family:'Teko',sans-serif;font-size:11px;color:#f0a500;border:1px solid rgba(240,165,0,0.3);padding:3px 7px;margin-left:auto;}.card-body{padding:16px 20px;}.card-player-row{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;}.card-photo{width:75px;height:85px;background:rgba(255,255,255,0.06);border:2px solid rgba(240,165,0,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;}.card-initials{font-family:'Teko',sans-serif;font-size:30px;color:#f0a500;font-weight:700;}.card-info{flex:1;}.card-pname{font-family:'Teko',sans-serif;font-size:22px;color:#fff;letter-spacing:1px;line-height:1;margin-bottom:5px;}.card-role{display:inline-block;background:rgba(240,165,0,0.15);border:1px solid rgba(240,165,0,0.4);color:#f0a500;font-size:9px;letter-spacing:2px;padding:3px 8px;text-transform:uppercase;font-weight:700;margin-bottom:8px;}.card-meta{display:flex;flex-direction:column;gap:4px;}.card-meta-row{display:flex;align-items:center;gap:7px;}.card-meta-key{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;width:42px;flex-shrink:0;}.card-meta-val{font-size:12px;color:rgba(255,255,255,0.8);font-weight:500;}.card-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.08);margin-bottom:12px;}.card-stat{padding:9px 7px;text-align:center;background:#0f2614;}.card-stat-val{font-family:'Teko',sans-serif;font-size:20px;color:#f0a500;display:block;line-height:1;}.card-stat-key{font-size:7px;letter-spacing:1.5px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-top:2px;}.card-foot{border-top:1px solid rgba(255,255,255,0.08);padding:11px 20px;display:flex;align-items:center;justify-content:space-between;}.card-id-txt{font-family:monospace;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;}.card-verified{font-size:10px;color:#2ecc5f;letter-spacing:1px;font-weight:600;}.card-bottom-stripe{height:4px;background:linear-gradient(90deg,#2ecc5f,#f0a500,#2ecc5f);}@media print{body{background:#111!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body>${card.outerHTML}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),600);
+}
+
+// ===== BROADCAST / PUSH NOTIFICATIONS =====
+async function sendBroadcast(){
+  if(!fbDB){showToast('⚠️ Firebase nahi mila');return;}
+  const title = document.getElementById('bc_title')?.value.trim();
+  const body = document.getElementById('bc_body')?.value.trim();
+  if(!title||!body){showToast('❌ Title aur message dono bharo');return;}
+  const bs = document.getElementById('bcStatus');
+  bs.style.display='block';
+  bs.style.background='rgba(240,165,0,0.1)';
+  bs.style.border='1px solid rgba(240,165,0,0.3)';
+  bs.style.color='#f0a500';
+  bs.textContent='📤 Sending...';
+  const ts = Date.now();
+  await fbUpdate(fbRef(fbDB,'broadcasts'),{
+    [ts]: { title, body, ts, sentAt: new Date().toLocaleString('en-IN'), sentBy:'admin' }
+  });
+  bs.style.background='rgba(46,204,95,0.1)';
+  bs.style.border='1px solid rgba(46,204,95,0.3)';
+  bs.style.color='#2ecc71';
+  bs.textContent='✅ Broadcast sent! Sabke phone pe notification jaayegi.';
+  document.getElementById('bc_title').value='';
+  document.getElementById('bc_body').value='';
+  loadBroadcastHistory();
+}
+
+function loadBroadcastHistory(){
+  if(!fbDB) return;
+  fbOnValue(fbRef(fbDB,'broadcasts'), snap => {
+    const hist = document.getElementById('bcHistory');
+    const data = snap.val();
+    if(!data||!hist) return;
+    const entries = Object.entries(data).sort((a,b)=>b[1].ts-a[1].ts).slice(0,10);
+    hist.innerHTML = entries.map(([k,v])=>`
+      <div style="background:var(--surface);border:1px solid var(--border);padding:12px 14px;border-radius:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+          <div style="font-family:'Teko',sans-serif;font-size:15px;color:white;letter-spacing:0.5px;">${v.title||'—'}</div>
+          <div style="font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;">${v.sentAt||'—'}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);font-family:'Hind',sans-serif;line-height:1.5;">${v.body||'—'}</div>
+      </div>`).join('');
+  },{onlyOnce:true});
+}
+
+function loadSubscriberCount(){
+  if(!fbDB) return;
+  fbOnValue(fbRef(fbDB,'subscribers'), snap => {
+    const data = snap.val();
+    const count = data ? Object.values(data).filter(s=>s.active).length : 0;
+    const el = document.getElementById('subscriberCount');
+    if(el) el.textContent = count;
+  });
+}
+
+// ===== BULK WHATSAPP =====
+function bulkWA(filter){
+  if(!fbDB){showToast('⚠️ Firebase connected nahi');return;}
+  const players=Object.values(window._allPlayers||{});
+  let list=players;
+  if(filter==='pending') list=players.filter(p=>p.status==='pending');
+  else if(filter==='approved') list=players.filter(p=>p.status==='approved');
+  if(list.length===0){showToast('❌ Is category mein koi player nahi');return;}
+  const template=document.getElementById('bulkMsg')?.value||'Namaste {name}! NECPL Season 1 update.';
+  const bs=document.getElementById('bulkStatus');
+  let current=0;
+  function sendNext(){
+    if(current>=list.length){
+      bs.style.display='block';bs.textContent=`✅ Saare ${list.length} players ko message links ready ho gaye!`;
+      return;
+    }
+    const p=list[current];
+    const pid=p.id||('NECPL-'+p._key.slice(-4).toUpperCase());
+    const msg=template.replace(/{name}/g,p.name||'Player').replace(/{id}/g,pid).replace(/{role}/g,p.role||'Player').replace(/{city}/g,p.city||'—');
+    const phone='91'+(p.phone||'').replace(/\D/g,'').slice(-10);
+    const url=`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    window.open(url,'_blank');
+    current++;
+    bs.style.display='block';
+    bs.textContent=`📤 Sending ${current}/${list.length}: ${p.name}...`;
+    if(current<list.length) setTimeout(sendNext,1800);
+    else{bs.textContent=`✅ Done! ${list.length} messages sent.`;}
+  }
+  sendNext();
+}
+
+// ===== CSV EXPORT =====
+function exportCSV(filter){
+  const players=Object.values(window._allPlayers||{});
+  let list=players;
+  if(filter==='pending') list=players.filter(p=>p.status==='pending');
+  else if(filter==='approved') list=players.filter(p=>p.status==='approved');
+  if(list.length===0){showToast('❌ Koi data nahi');return;}
+  const headers=['Name','Age','Phone','City','Role','Experience','Type','Status','Player ID','Reg Date','Reg Time'];
+  const rows=list.map(p=>[
+    p.name||'',p.age||'',p.phone||'',p.city||'',p.role||'',p.exp||'',p.type||'player',p.status||'pending',
+    p.id||('NECPL-'+(p._key||'').slice(-4).toUpperCase()),p.regDate||'',p.regTime||''
+  ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`NECPL_${filter}_${new Date().toLocaleDateString('en-IN').replace(/\//g,'-')}.csv`;
+  a.click();URL.revokeObjectURL(url);
+  showToast(`✅ CSV downloaded! ${list.length} players exported.`);
+}
+
+// ===== COUNTDOWN SAVE =====
+async function saveCountdown(){
+  if(!fbDB){showToast('⚠️ Firebase nahi mila');return;}
+  const data={
+    regCtrl:{deadline:document.getElementById('cd_deadline')?.value||''},
+    countdown:{title:document.getElementById('cd_title')?.value||'REGISTRATION CLOSES IN',subtitle:document.getElementById('cd_subtitle')?.value||'NECPL SEASON 1 · GUWAHATI, ASSAM'}
+  };
+  await fbUpdate(fbRef(fbDB,'siteContent'),data);
+  showToast('✅ Countdown saved! Website pe live ho gaya!');
+}
+
+// ===== FAQ MANAGER =====
+let faqItems = [
+  {q:'NECPL mein register karne ke liye kya karna hoga?', a:'Website pe Register Now dabaao → details bharo → ₹500 pay karo → UTR submit karo. Admin verify karke approve karega.'},
+  {q:'Registration fee kitni hai?', a:'Player Registration ₹500 (non-refundable). Team Registration ₹30,000.'},
+  {q:'Trial kahan hogi?', a:'Guwahati, Assam mein. Exact date registered players ko WhatsApp pe batayi jaayegi.'},
+  {q:'Age limit kya hai?', a:'Minimum 16 saal, Maximum 40 saal.'},
+  {q:'Approval mein kitna time lagta hai?', a:'UTR submit karne ke baad 24-48 ghante mein admin approve karega.'}
+];
+
+function renderFaqAdmin(){
+  const list = document.getElementById('faqAdminList');
+  if(!list) return;
+  list.innerHTML = faqItems.map((f,i) => `
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 16px;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:11px;letter-spacing:2px;color:var(--muted);">FAQ #${i+1}</span>
+        <button onclick="removeFaqRow(${i})" style="background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.3);color:#e74c3c;padding:3px 10px;font-size:12px;cursor:pointer;">✕ Remove</button>
+      </div>
+      <input class="ctrl-input" placeholder="Sawaal (Question)" value="${(f.q||'').replace(/"/g,'&quot;')}" oninput="faqItems[${i}].q=this.value" style="margin-bottom:8px;">
+      <textarea class="ctrl-textarea" placeholder="Jawab (Answer)" oninput="faqItems[${i}].a=this.value" style="min-height:70px;">${f.a||''}</textarea>
+    </div>
+  `).join('');
+}
+
+function addFaqRow(){
+  faqItems.push({q:'',a:''});
+  renderFaqAdmin();
+  document.getElementById('faqAdminList').lastElementChild?.scrollIntoView({behavior:'smooth'});
+}
+
+function removeFaqRow(i){
+  faqItems.splice(i,1);
+  renderFaqAdmin();
+}
+
+async function saveFAQ(){
+  if(!fbDB){showToast('⚠️ Firebase nahi mila');return;}
+  const clean = faqItems.filter(f=>f.q.trim()&&f.a.trim());
+  await fbUpdate(fbRef(fbDB,'siteContent'),{faq: clean});
+  showToast('✅ FAQ saved! Website pe live ho gaya!');
+}
+
+// Load FAQ from Firebase into admin
+function loadFaqAdmin(d){
+  if(d && d.faq && Array.isArray(d.faq) && d.faq.length > 0){
+    faqItems = d.faq;
+  }
+  renderFaqAdmin();
+}
+
+async function saveCountdown(){
+  if(!fbDB){showToast('⚠️ Firebase nahi mila');return;}
+  const data={
+    regCtrl:{deadline:document.getElementById('cd_deadline')?.value||''},
+    countdown:{title:document.getElementById('cd_title')?.value||'REGISTRATION CLOSES IN',subtitle:document.getElementById('cd_subtitle')?.value||'NECPL SEASON 1 · GUWAHATI, ASSAM'}
+  };
+  await fbUpdate(fbRef(fbDB,'siteContent'),data);
+  showToast('✅ Countdown saved! Website pe live ho gaya!');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>{t.style.display='none';},3500);
+}
+</script>
+</body>
+</html>
